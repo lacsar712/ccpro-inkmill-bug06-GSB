@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import get_jwt_identity, jwt_required
+from flask_jwt_extended import jwt_required
 
+from app.auth import current_user
 from app.database import SessionLocal
-from app.models.user import User
 from app.models.workshop import Workshop
 from app.serializers import workshop_json
 from app.utils import error
@@ -10,20 +10,12 @@ from app.utils import error
 bp = Blueprint("workshops", __name__, url_prefix="/api/workshops")
 
 
-def _require_user(db):
-    identity = get_jwt_identity()
-    user = db.query(User).filter(User.username == str(identity)).first()
-    if not user:
-        return None
-    return user
-
-
 @bp.get("")
 @jwt_required()
 def list_workshops():
     db = SessionLocal()
     try:
-        if not _require_user(db):
+        if not current_user(db):
             return error("未登录或登录已过期", 401)
         rows = db.query(Workshop).order_by(Workshop.id.desc()).all()
         return jsonify([workshop_json(r) for r in rows])
@@ -44,7 +36,7 @@ def create_workshop():
 
     db = SessionLocal()
     try:
-        if not _require_user(db):
+        if not current_user(db):
             return error("未登录或登录已过期", 401)
         row = Workshop(name=name, site=site, notes=notes)
         db.add(row)
@@ -60,7 +52,7 @@ def create_workshop():
 def update_workshop(item_id: int):
     db = SessionLocal()
     try:
-        if not _require_user(db):
+        if not current_user(db):
             return error("未登录或登录已过期", 401)
         row = db.get(Workshop, item_id)
         if not row:
@@ -86,7 +78,7 @@ def update_workshop(item_id: int):
 def delete_workshop(item_id: int):
     db = SessionLocal()
     try:
-        if not _require_user(db):
+        if not current_user(db):
             return error("未登录或登录已过期", 401)
         row = db.get(Workshop, item_id)
         if not row:

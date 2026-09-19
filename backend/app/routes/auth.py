@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
+from flask_jwt_extended import create_access_token, jwt_required
 
-from app.auth import verify_password
+from app.auth import current_user, verify_password
 from app.database import SessionLocal
 from app.models.user import User
 from app.serializers import user_json
@@ -36,8 +36,7 @@ def login():
 def me():
     db = SessionLocal()
     try:
-        identity = get_jwt_identity()
-        user = db.query(User).filter(User.username == identity).first()
+        user = current_user(db)
         if not user:
             return error("未登录或登录已过期", 401)
         return jsonify(user_json(user))
