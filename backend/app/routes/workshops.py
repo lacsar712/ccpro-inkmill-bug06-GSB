@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import get_jwt_identity, jwt_required
+from flask_jwt_extended import jwt_required
 
+from app.auth import current_user
 from app.database import SessionLocal
-from app.models.user import User
 from app.models.workshop import Workshop
 from app.serializers import workshop_json
 from app.utils import error
@@ -11,11 +11,7 @@ bp = Blueprint("workshops", __name__, url_prefix="/api/workshops")
 
 
 def _require_user(db):
-    identity = get_jwt_identity()
-    user = db.query(User).filter(User.username == str(identity)).first()
-    if not user:
-        return None
-    return user
+    return current_user(db)
 
 
 @bp.get("")

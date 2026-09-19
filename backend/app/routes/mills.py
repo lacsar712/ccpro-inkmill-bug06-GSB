@@ -1,26 +1,17 @@
 from decimal import Decimal
 
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import get_jwt_identity, jwt_required
+from flask_jwt_extended import jwt_required
 from sqlalchemy.exc import IntegrityError
 
+from app.auth import current_user
 from app.database import SessionLocal
 from app.models.mill import MILL_STATUSES, Mill
-from app.models.user import User
 from app.models.workshop import Workshop
 from app.serializers import mill_json
 from app.utils import error
 
 bp = Blueprint("mills", __name__, url_prefix="/api/mills")
-
-def _actor(db):
-    identity = get_jwt_identity()
-    try:
-        return db.get(User, int(identity))
-    except (TypeError, ValueError):
-        return db.query(User).filter(User.username == str(identity)).first()
-
-
 
 
 def _validate(body: dict) -> str | None:
@@ -67,7 +58,7 @@ def create_mill():
     body = request.get_json(silent=True) or {}
     db0 = SessionLocal()
     try:
-        if not _actor(db0):
+        if not current_user(db0):
             return error("未登录或登录已过期", 401)
     finally:
         db0.close()
